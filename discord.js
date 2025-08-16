@@ -311,21 +311,21 @@ client.on("messageCreate", async (message) => {
   }
 
   // -------------------- AI Chat --------------------
-  if (command === "!chat") {
+    if (command === "!chat") {
     const userMention = message.mentions.users.first();
-    const channelMention = getChannel(
-      message.guild,
-      args.find((a) => a.startsWith("#"))
-    );
+    const channelMention = message.mentions.channels.first(); // <-- fix
+
+    // Remove mentions from args to get prompt
     const prompt = args
       .filter((a) => !a.startsWith("<@") && !a.startsWith("<#"))
       .join(" ");
+
     if (!prompt)
       return message.channel.send(
         "Usage: !chat <message> [#channel/channel-name] [@user]"
       );
 
-    let targetChannel = channelMention || message.channel;
+    const targetChannel = channelMention || message.channel;
 
     try {
       const response = await openai.chat.completions.create({
@@ -335,6 +335,7 @@ client.on("messageCreate", async (message) => {
 
       let reply = response.choices[0].message.content;
       if (userMention) reply = `${userMention}, ${reply}`;
+
       splitMessage(reply).forEach((chunk) => targetChannel.send(chunk));
     } catch (err) {
       console.error(err);
