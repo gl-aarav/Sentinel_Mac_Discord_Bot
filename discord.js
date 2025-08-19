@@ -18,7 +18,7 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
-// ==================== Discord & OpenAI Setup ====================
+// ==================== Discord & Gemini Setup ====================
 require("dotenv").config({ path: "./ai_bot.env" });
 const {
   Client,
@@ -26,7 +26,7 @@ const {
   PermissionsBitField,
   ChannelType,
 } = require("discord.js");
-const { OpenAI } = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const client = new Client({
   intents: [
@@ -37,7 +37,11 @@ const client = new Client({
   ],
 });
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Initialize the Gemini API with your API key from the .env file
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Choose the generative model you want to use
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
 const ADMIN_ROLE = "Founder/Admin";
 const INSTRUCTOR_ROLE = "Instructor";
 
@@ -110,8 +114,7 @@ client.on("messageCreate", async (message) => {
   if (!isAdmin(message.member)) return;
 
   if (command === "!help") {
-    return message.channel.send(`**Available Commands:**  
-  \`\`\`
+    return message.channel.send(`**Available Commands:** \`\`\`
   **Admin & Instructor Commands:**
     ✅ !help - Show this help message
     🎓 !verify [@user] - Give the Students role to a mentioned user (Admin & Instructor only)
@@ -311,9 +314,9 @@ client.on("messageCreate", async (message) => {
   }
 
   // -------------------- AI Chat --------------------
-    if (command === "!chat") {
+  if (command === "!chat") {
     const userMention = message.mentions.users.first();
-    const channelMention = message.mentions.channels.first(); // <-- fix
+    const channelMention = message.mentions.channels.first();
 
     // Remove mentions from args to get prompt
     const prompt = args
@@ -328,12 +331,12 @@ client.on("messageCreate", async (message) => {
     const targetChannel = channelMention || message.channel;
 
     try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-      });
+      // Use model.generateContent to send the prompt to the Gemini API
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      // Extract the text from the response
+      let reply = response.text();
 
-      let reply = response.choices[0].message.content;
       if (userMention) reply = `${userMention}, ${reply}`;
 
       splitMessage(reply).forEach((chunk) => targetChannel.send(chunk));
