@@ -33,7 +33,9 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.DirectMessages, // ✅ Needed for DMs
   ],
+  partials: ["CHANNEL"], // ✅ Required to handle DM channels
 });
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -49,7 +51,7 @@ client.once("ready", () => console.log(`${client.user.tag} is online!`));
 
 // ==================== Helpers ====================
 function isAdmin(member) {
-  return member.roles.cache.some((r) => r.name === ADMIN_ROLE);
+  return member?.roles?.cache?.some((r) => r.name === ADMIN_ROLE);
 }
 
 function splitMessage(message) {
@@ -113,10 +115,26 @@ client.on("threadCreate", async (thread) => {
   }
 });
 
-// ==================== Command Handler ====================
+// ==================== Command & DM Handler ====================
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
+  // -------------------- DM Handler --------------------
+  if (message.channel.type === ChannelType.DM) {
+    try {
+      const prompt = `${contextPrompt}\n\nUser: ${message.content}`;
+      const result = await model.generateContent(prompt);
+      const response = await result.response.text();
+
+      splitMessage(response).forEach((chunk) => message.channel.send(chunk));
+    } catch (err) {
+      console.error("Error handling DM:", err);
+      message.channel.send("❌ Sorry, something went wrong with the AI.");
+    }
+    return; // ✅ stop here so DM doesn't run guild commands
+  }
+
+  // -------------------- Guild Commands --------------------
   const args = message.content.trim().split(/\s+/);
   const command = args.shift().toLowerCase();
 
@@ -126,13 +144,14 @@ client.on("messageCreate", async (message) => {
 
   // -------------------- Help Command --------------------
   if (command === "!help") {
-  let helpMessage = `
+    let helpMessage = `
 \`\`\`
 📘 Available Commands (Founder/Admin Only)
 
 __General Commands__
 !help                  → Show this help message
 Forum auto-response    → Any user can post in the 'questions' forum and get an AI response automatically
+DM the bot             → Get an AI response directly in private messages
 
 __Admin Commands__
 !setcontext <text>     → Update AI response behavior/context
@@ -150,48 +169,47 @@ __AI Commands__
 !chat <question>       → Ask AI via Gemini in a channel (does NOT use context)
 \`\`\`
 `;
-  splitMessage(helpMessage).forEach((msg) => message.channel.send(msg));
-}
-
+    splitMessage(helpMessage).forEach((msg) => message.channel.send(msg));
+  }
 
   // -------------------- Set AI Context --------------------
   if (command === "!setcontext") {
     const newContext = args.join(" ");
-    if (!newContext) return message.channel.send("Usage: !setcontext <new context>");
+    if (!newContext)
+      return message.channel.send("Usage: !setcontext <new context>");
     contextPrompt = newContext;
     message.channel.send("✅ AI context updated successfully!");
   }
 
   // -------------------- AI Chat Command --------------------
-if (command === "!chat") {
-  const userMention = message.mentions.users.first();
-  const channelMention = message.mentions.channels.first();
+  if (command === "!chat") {
+    const userMention = message.mentions.users.first();
+    const channelMention = message.mentions.channels.first();
 
-  // Remove mentions from args to get the prompt
-  const prompt = args
-    .filter((a) => !a.startsWith("<@") && !a.startsWith("<#"))
-    .join(" ");
+    // Remove mentions from args to get the prompt
+    const prompt = args
+      .filter((a) => !a.startsWith("<@") && !a.startsWith("<#"))
+      .join(" ");
 
-  if (!prompt)
-    return message.channel.send(
-      "Usage: !chat <message> [#channel/channel-name] [@user]"
-    );
+    if (!prompt)
+      return message.channel.send(
+        "Usage: !chat <message> [#channel/channel-name] [@user]"
+      );
 
-  const targetChannel = channelMention || message.channel;
+    const targetChannel = channelMention || message.channel;
 
-  try {
-    // Send prompt directly to Gemini without context
-    const result = await model.generateContent(prompt);
-    const response = await result.response.text();
+    try {
+      // Send prompt directly to Gemini without context
+      const result = await model.generateContent(prompt);
+      const response = await result.response.text();
 
-    let reply = userMention ? `${userMention}, ${response}` : response;
-    splitMessage(reply).forEach((chunk) => targetChannel.send(chunk));
-  } catch (err) {
-    console.error(err);
-    message.channel.send("❌ Error while executing AI chat.");
+      let reply = userMention ? `${userMention}, ${response}` : response;
+      splitMessage(reply).forEach((chunk) => targetChannel.send(chunk));
+    } catch (err) {
+      console.error(err);
+      message.channel.send("❌ Error while executing AI chat.");
+    }
   }
-}
-
 
   // -------------------- Role Commands --------------------
   if (command === "!addrole") {
@@ -199,7 +217,8 @@ if (command === "!chat") {
     const userArg = args.slice(1).join(" ");
     const role = getRole(message.guild, roleArg);
     const member = getMember(message.guild, userArg);
-    if (!role || !member) return message.channel.send("Usage: !addrole <role> <user>");
+    if (!role || !member)
+      return message.channel.send("Usage: !addrole <role> <user>");
     await member.roles.add(role);
     message.channel.send(`✅ Added ${role.name} to ${member.user.tag}`);
   }
@@ -209,7 +228,8 @@ if (command === "!chat") {
     const userArg = args.slice(1).join(" ");
     const role = getRole(message.guild, roleArg);
     const member = getMember(message.guild, userArg);
-    if (!role || !member) return message.channel.send("Usage: !removerole <role> <user>");
+    if (!role || !member)
+      return message.channel.send("Usage: !removerole <role> <user>");
     await member.roles.remove(role);
     message.channel.send(`✅ Removed ${role.name} from ${member.user.tag}`);
   }
@@ -232,7 +252,8 @@ if (command === "!chat") {
     const oldName = args[0];
     const newName = args.slice(1).join(" ");
     const role = getRole(message.guild, oldName);
-    if (!role || !newName) return message.channel.send("Usage: !renamerole <oldName> <newName>");
+    if (!role || !newName)
+      return message.channel.send("Usage: !renamerole <oldName> <newName>");
     await role.setName(newName);
     message.channel.send(`✅ Renamed "${oldName}" to "${newName}"`);
   }
@@ -242,7 +263,10 @@ if (command === "!chat") {
     const name = args.join("-");
     if (!name) return message.reply("Usage: !createchannel <name>");
     try {
-      const ch = await message.guild.channels.create({ name, type: ChannelType.GuildText });
+      const ch = await message.guild.channels.create({
+        name,
+        type: ChannelType.GuildText,
+      });
       message.reply(`✅ Channel created: ${ch.toString()}`);
     } catch (err) {
       console.error(err);
@@ -279,7 +303,9 @@ if (command === "!chat") {
     const user = message.mentions.members.first();
     if (!user) return message.reply("Usage: !createprivatechannel @user");
 
-    const adminRole = message.guild.roles.cache.find((r) => r.name === ADMIN_ROLE);
+    const adminRole = message.guild.roles.cache.find(
+      (r) => r.name === ADMIN_ROLE
+    );
     const overwrites = [
       { id: message.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
       {
@@ -316,12 +342,12 @@ if (command === "!chat") {
     }
   }
 
-  
   // -------------------- Send DM --------------------
   if (command === "!senddm") {
     const member = message.mentions.members.first();
     const dmMessage = args.filter((a) => !a.startsWith("<@")).join(" ");
-    if (!member || !dmMessage) return message.channel.send("Usage: !sendDM <message> @user");
+    if (!member || !dmMessage)
+      return message.channel.send("Usage: !sendDM <message> @user");
 
     try {
       await member.send(dmMessage);
