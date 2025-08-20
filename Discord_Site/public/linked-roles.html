@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Linked Roles — Verify | Sentinel</title>
+  <style>
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b1220;color:#e8eef9}
+    .wrap{max-width:760px;margin:0 auto;padding:40px 20px}
+    .card{background:#111a2b;border:1px solid #20304f;border-radius:18px;padding:24px}
+    h1{margin:0 0 10px} p{color:#b9c8e7;line-height:1.6}
+    .btn{display:inline-block;padding:10px 14px;border-radius:10px;border:1px solid #2a3a5e;text-decoration:none;color:#e8eef9;background:#0e1728}
+    .badge{display:inline-block;background:#0e1a33;border:1px solid #2c3d67;padding:2px 8px;border-radius:8px;font-size:12px}
+    .info{background:#0c1528;border:1px dashed #2b3c66;border-radius:12px;padding:12px;margin-top:12px;color:#a9bce6}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Verify for Linked Role</h1>
+      <p>This page is shown inside Discord when an admin configures a Linked Role with our app. For now, verification is simple: click the button below to confirm you’ve visited this page. Later, you can add OAuth and real checks.</p>
+      <div class="info"><span class="badge">Placeholder Flow</span> In production, implement OAuth2 login and call the Linked Roles API to update a user's metadata, then prompt them to "Re-check" in Discord.</div>
+      <p><a class="btn" href="#" onclick="verified()">I’m verified</a></p>
+      <p id="status"></p>
+    </div>
+  </div>
+<script>
+function verified(){
+  const p = document.getElementById('status');
+  p.textContent = 'Thanks! You can return to Discord and press “Re-check”.';
+}
+</script>
+</body>
+</html>
