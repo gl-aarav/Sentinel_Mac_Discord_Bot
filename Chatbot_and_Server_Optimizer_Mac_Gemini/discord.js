@@ -130,27 +130,29 @@ client.on("messageCreate", async (message) => {
 \`\`\`
 📘 Available Commands (Founder/Admin Only)
 
-General Commands:
-- !help -> Show this help message
-- !chat <question> -> Ask AI via Gemini in a channel
-- Forum auto-response -> Any user can post in the 'questions' forum and get an AI response automatically
+__General Commands__
+!help                  → Show this help message
+Forum auto-response    → Any user can post in the 'questions' forum and get an AI response automatically
 
-Admin Commands:
-- !setcontext <text> -> Update AI response behavior/context
-- !addrole <role> <user> -> Assign a role to a user
-- !removerole <role> <user> -> Remove a role from a user
-- !createrole <name> -> Create a new role
-- !deleterole <name> -> Delete a role
-- !renamerole <oldName> <newName> -> Rename a role
-- !createchannel <name> -> Create a text channel
-- !deletechannel <#channel> -> Delete a text channel
-- !createprivatechannel @user -> Create a private channel for a user + Admins
-- !sendDM <message> @user -> Send a DM to a user
-- !kick @user / !ban @user / !unban <userID> -> Manage users
+__Admin Commands__
+!setcontext <text>     → Update AI response behavior/context
+!addrole <role> <user> → Assign a role to a user
+!removerole <role> <user> → Remove a role from a user
+!createrole <name>     → Create a new role
+!deleterole <name>     → Delete a role
+!renamerole <oldName> <newName> → Rename a role
+!createchannel <name>  → Create a text channel
+!deletechannel <#channel> → Delete a text channel
+!createprivatechannel @user → Create a private channel for a user + Admins
+!sendDM <message> @user → Send a DM to a user
+
+__AI Commands__
+!chat <question>       → Ask AI via Gemini in a channel (does NOT use context)
 \`\`\`
 `;
   splitMessage(helpMessage).forEach((msg) => message.channel.send(msg));
 }
+
 
   // -------------------- Set AI Context --------------------
   if (command === "!setcontext") {
@@ -161,24 +163,35 @@ Admin Commands:
   }
 
   // -------------------- AI Chat Command --------------------
-  if (command === "!chat") {
-    const userMention = message.mentions.users.first();
-    const channelMention = message.mentions.channels.first();
-    const prompt = args.filter((a) => !a.startsWith("<@") && !a.startsWith("<#")).join(" ");
-    if (!prompt) return message.channel.send("Usage: !chat <message> [#channel] [@user]");
+if (command === "!chat") {
+  const userMention = message.mentions.users.first();
+  const channelMention = message.mentions.channels.first();
 
-    const targetChannel = channelMention || message.channel;
-    try {
-      const result = await model.generateContent(`${contextPrompt}\n\nUser asked: ${prompt}`);
-      const response = await result.response.text();
+  // Remove mentions from args to get the prompt
+  const prompt = args
+    .filter((a) => !a.startsWith("<@") && !a.startsWith("<#"))
+    .join(" ");
 
-      let reply = userMention ? `${userMention}, ${response}` : response;
-      splitMessage(reply).forEach((chunk) => targetChannel.send(chunk));
-    } catch (err) {
-      console.error(err);
-      message.channel.send("❌ Error while executing AI chat.");
-    }
+  if (!prompt)
+    return message.channel.send(
+      "Usage: !chat <message> [#channel/channel-name] [@user]"
+    );
+
+  const targetChannel = channelMention || message.channel;
+
+  try {
+    // Send prompt directly to Gemini without context
+    const result = await model.generateContent(prompt);
+    const response = await result.response.text();
+
+    let reply = userMention ? `${userMention}, ${response}` : response;
+    splitMessage(reply).forEach((chunk) => targetChannel.send(chunk));
+  } catch (err) {
+    console.error(err);
+    message.channel.send("❌ Error while executing AI chat.");
   }
+}
+
 
   // -------------------- Role Commands --------------------
   if (command === "!addrole") {
@@ -303,28 +316,7 @@ Admin Commands:
     }
   }
 
-  // -------------------- Kick/Ban --------------------
-  if (command === "!kick") {
-    const member = message.mentions.members.first();
-    if (!member) return message.channel.send("Usage: !kick @user");
-    await member.kick();
-    message.channel.send(`✅ Kicked ${member.user.tag}`);
-  }
-
-  if (command === "!ban") {
-    const member = message.mentions.members.first();
-    if (!member) return message.channel.send("Usage: !ban @user");
-    await member.ban();
-    message.channel.send(`✅ Banned ${member.user.tag}`);
-  }
-
-  if (command === "!unban") {
-    const userId = args[0];
-    if (!userId) return message.channel.send("Usage: !unban <userID>");
-    await message.guild.members.unban(userId);
-    message.channel.send(`✅ Unbanned user ID ${userId}`);
-  }
-
+  
   // -------------------- Send DM --------------------
   if (command === "!senddm") {
     const member = message.mentions.members.first();
