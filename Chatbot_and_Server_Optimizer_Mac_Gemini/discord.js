@@ -45,14 +45,15 @@ const client = new Client({
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-const ADMIN_ROLE = "Founder/Admin";
+const ADMIN_ROLE = "Admin";
 
 // Default AI context
 let contextPrompt = "You are a helpful assistant that provides concise initial answers.";
 
 // ==================== Helpers ====================
 function isAdmin(member) {
-  return member?.roles?.cache?.some((r) => r.name === ADMIN_ROLE);
+  if (!member) return false;
+  return member.permissions.has(PermissionsBitField.Flags.Administrator);
 }
 
 function splitMessage(message) {
@@ -447,10 +448,10 @@ client.on("interactionCreate", async (interaction) => {
 AI:
 !chat <message>                → Ask AI via Gemini (no context)
 
-Message Commands (Founder/Admin Only):
+Message Commands (Admin Only):
 !help                          → Show this help message
 
-Slash Commands (Founder/Admin Only, most are ephemeral):
+Slash Commands (Admin Only, most are ephemeral):
 /help                          → Show this help message
 /setcontext <text>             → Update AI response behavior
 /addrole <role> <user>         → Assign a role to a user
@@ -730,10 +731,10 @@ client.on("messageCreate", async (message) => {
 AI:
 !chat <message>                → Ask AI via Gemini (no context)
 
-Message Commands (Founder/Admin Only):
+Message Commands (Admin Only):
 !help                          → Show this help message
 
-Slash Commands (Founder/Admin Only, most are ephemeral):
+Slash Commands (Admin Only, most are ephemeral):
 /help                          → Show this help message
 /setcontext <text>             → Update AI response behavior
 /addrole <role> <user>         → Assign a role to a user
