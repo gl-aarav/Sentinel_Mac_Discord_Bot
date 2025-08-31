@@ -46,7 +46,7 @@ const client = new Client({
 });
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 const ADMIN_ROLE = "Admin";
 
@@ -62,7 +62,7 @@ function isAdmin(member) {
 function splitMessage(message) {
   const chunks = [];
   while (message.length > 0) {
-    let chunk = message.slice(0,1665);
+    let chunk = message.slice(0,1605);
 
     // Prefer to cut at the last newline if one exists in this chunk
     const lastNewline = chunk.lastIndexOf("\n");
@@ -111,7 +111,7 @@ function botPermsIn(channel) {
 }
 
 // ==================== Bot Ready ====================
-client.once("clientready", async () => {
+client.once("ready", async () => {
   console.log(`${client.user.tag} is online!`);
 
   const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_BOT_TOKEN);
@@ -390,7 +390,7 @@ client.once("clientready", async () => {
       )
       .toJSON(),
     new SlashCommandBuilder()
-      .setName("askgemini")
+      .setName("askquestion")
       .setDescription("Ask the Gemini AI model a question with context.")
       .addStringOption(option =>
         option.setName("question")
@@ -775,7 +775,7 @@ client.on("guildCreate", async (guild) => {
       )
       .toJSON(),
     new SlashCommandBuilder()
-      .setName("askgemini")
+      .setName("askquestion")
       .setDescription("Ask the Gemini AI model a question with context.")
       .addStringOption(option =>
         option.setName("question")
@@ -929,7 +929,7 @@ AI:
 /setcontext <text>             → Update AI response behavior (Admin)
 /getcontext                    → Get AI context (Admin)
 /summarize <amount>            → Summarize recent messages (Admin)
-/askgemini <question>          → Ask Gemini a question
+/askquestion <question>          → Ask Gemini a question
 
 Moderation (Admin Only):
 /kick <user> [reason]          → Kick a user
@@ -993,6 +993,12 @@ Utility & Fun:
       contextPrompt = newContext;
       return interaction.reply({ content: "✅ AI context updated successfully!", ephemeral: true });
     }
+    case "getcontext": {
+  if (!isUserAdmin) {
+    return interaction.reply({ content: "❌ You don’t have permission to use this command.", ephemeral: true });
+  }
+  return interaction.reply({ content: `✅ The current AI context is:\n\`\`\`${contextPrompt}\`\`\``, ephemeral: true });
+}
     case "addrole": {
       const role = interaction.options.getRole("role");
       const member = interaction.options.getMember("user");
@@ -1405,7 +1411,7 @@ Utility & Fun:
       }
       return interaction.reply({ content: `✅ The current AI context is:\n\`\`\`${contextPrompt}\`\`\``, ephemeral: true });
     }
-    case "askgemini": {
+    case "askquestion": {
       await interaction.deferReply();
       const question = interaction.options.getString("question");
       try {
@@ -1600,7 +1606,7 @@ AI:
 /setcontext <text>             → Update AI response behavior (Admin)
 /getcontext                    → Get AI context (Admin)
 /summarize <amount>            → Summarize recent messages (Admin)
-/askgemini <question>          → Ask Gemini a question
+/askquestion <question>          → Ask Gemini a question
 
 Moderation (Admin Only):
 /kick <user> [reason]          → Kick a user
