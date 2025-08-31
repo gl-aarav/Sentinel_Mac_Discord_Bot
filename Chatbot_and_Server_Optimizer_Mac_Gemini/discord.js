@@ -464,29 +464,6 @@ client.once("ready", async () => {
       )
       .toJSON(),
     new SlashCommandBuilder()
-      .setName("weather")
-      .setDescription("Gets the current weather for a specified city.")
-      .addStringOption(option =>
-        option.setName("city")
-          .setDescription("The city name.")
-          .setRequired(true)
-      )
-      .toJSON(),
-    new SlashCommandBuilder()
-      .setName("translate")
-      .setDescription("Translates text to a specified language.")
-      .addStringOption(option =>
-        option.setName("text")
-          .setDescription("The text to translate.")
-          .setRequired(true)
-      )
-      .addStringOption(option =>
-        option.setName("language")
-          .setDescription("The language code to translate to (e.g., 'es' for Spanish).")
-          .setRequired(true)
-      )
-      .toJSON(),
-    new SlashCommandBuilder()
       .setName("randomfact")
       .setDescription("Gets a random fun fact.")
       .toJSON(),
@@ -849,29 +826,6 @@ client.on("guildCreate", async (guild) => {
       )
       .toJSON(),
     new SlashCommandBuilder()
-      .setName("weather")
-      .setDescription("Gets the current weather for a specified city.")
-      .addStringOption(option =>
-        option.setName("city")
-          .setDescription("The city name.")
-          .setRequired(true)
-      )
-      .toJSON(),
-    new SlashCommandBuilder()
-      .setName("translate")
-      .setDescription("Translates text to a specified language.")
-      .addStringOption(option =>
-        option.setName("text")
-          .setDescription("The text to translate.")
-          .setRequired(true)
-      )
-      .addStringOption(option =>
-        option.setName("language")
-          .setDescription("The language code to translate to (e.g., 'es' for Spanish).")
-          .setRequired(true)
-      )
-      .toJSON(),
-    new SlashCommandBuilder()
       .setName("randomfact")
       .setDescription("Gets a random fun fact.")
       .toJSON(),
@@ -965,8 +919,6 @@ Utility & Fun:
 /embed <title> <desc> [color]  → Send a custom embed
 /poll <question>               → Create a yes/no poll
 /8ball <question>              → Ask the 8-ball
-/weather <city>                → Get weather info
-/translate <text> <language>   → Translate text
 /randomfact                    → Get a random fact
 \`\`\`
 `;
@@ -1523,33 +1475,6 @@ Utility & Fun:
       interaction.reply(`🎱 **${question}**\n${response}`);
       break;
     }
-    case "weather": {
-      await interaction.deferReply();
-      const city = interaction.options.getString("city");
-      try {
-        // NOTE: A real implementation would require an external weather API like OpenWeatherMap.
-        const response = `Weather for **${city}** is a placeholder for a real API call. Expect a sunny day! ☀️`;
-        interaction.editReply(response);
-      } catch (err) {
-        console.error("Error fetching weather:", err);
-        interaction.editReply({ content: "❌ Failed to fetch weather data. Please try again later.", ephemeral: true });
-      }
-      break;
-    }
-    case "translate": {
-      await interaction.deferReply();
-      const text = interaction.options.getString("text");
-      const language = interaction.options.getString("language");
-      try {
-        // NOTE: A real implementation would require a translation API like Google Translate API.
-        const response = `Translating "**${text}**" to **${language}** is a placeholder. Hello!`;
-        interaction.editReply(response);
-      } catch (err) {
-        console.error("Error translating text:", err);
-        interaction.editReply({ content: "❌ Failed to translate text. Please check the language code.", ephemeral: true });
-      }
-      break;
-    }
     case "randomfact": {
       const facts = [
         "A group of flamingos is called a 'flamboyance'.",
@@ -1642,8 +1567,6 @@ Utility & Fun:
 /embed <title> <desc> [color]  → Send a custom embed
 /poll <question>               → Create a yes/no poll
 /8ball <question>              → Ask the 8-ball
-/weather <city>                → Get weather info
-/translate <text> <language>   → Translate text
 /randomfact                    → Get a random fact
 \`\`\`
 `;
