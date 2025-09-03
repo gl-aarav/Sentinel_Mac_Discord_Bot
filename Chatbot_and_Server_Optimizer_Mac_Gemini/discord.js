@@ -316,24 +316,6 @@ client.once("ready", async () => {
       )
       .toJSON(),
     new SlashCommandBuilder()
-      .setName("mute")
-      .setDescription("Mutes a user (prevents them from sending messages).")
-      .addUserOption(option =>
-        option.setName("user")
-          .setDescription("The user to mute.")
-          .setRequired(true)
-      )
-      .toJSON(),
-    new SlashCommandBuilder()
-      .setName("unmute")
-      .setDescription("Unmutes a user.")
-      .addUserOption(option =>
-        option.setName("user")
-          .setDescription("The user to unmute.")
-          .setRequired(true)
-      )
-      .toJSON(),
-    new SlashCommandBuilder()
       .setName("warn")
       .setDescription("Issues a warning to a user.")
       .addUserOption(option =>
@@ -391,10 +373,10 @@ client.once("ready", async () => {
       .toJSON(),
     new SlashCommandBuilder()
       .setName("askquestion")
-      .setDescription("Ask the Gemini AI model a question with context.")
+      .setDescription("Ask AI a question with context.")
       .addStringOption(option =>
         option.setName("question")
-          .setDescription("The question to ask Gemini.")
+          .setDescription("The question to ask AI.")
           .setRequired(true)
       )
       .toJSON(),
@@ -678,24 +660,6 @@ client.on("guildCreate", async (guild) => {
       )
       .toJSON(),
     new SlashCommandBuilder()
-      .setName("mute")
-      .setDescription("Mutes a user (prevents them from sending messages).")
-      .addUserOption(option =>
-        option.setName("user")
-          .setDescription("The user to mute.")
-          .setRequired(true)
-      )
-      .toJSON(),
-    new SlashCommandBuilder()
-      .setName("unmute")
-      .setDescription("Unmutes a user.")
-      .addUserOption(option =>
-        option.setName("user")
-          .setDescription("The user to unmute.")
-          .setRequired(true)
-      )
-      .toJSON(),
-    new SlashCommandBuilder()
       .setName("warn")
       .setDescription("Issues a warning to a user.")
       .addUserOption(option =>
@@ -753,10 +717,10 @@ client.on("guildCreate", async (guild) => {
       .toJSON(),
     new SlashCommandBuilder()
       .setName("askquestion")
-      .setDescription("Ask the Gemini AI model a question with context.")
+      .setDescription("Ask AI a question with context.")
       .addStringOption(option =>
         option.setName("question")
-          .setDescription("The question to ask Gemini.")
+          .setDescription("The question to ask AI.")
           .setRequired(true)
       )
       .toJSON(),
@@ -879,19 +843,17 @@ client.on("interactionCreate", async (interaction) => {
 📘 Available Commands
 
 AI:
-!chat <message>                → Ask AI via Gemini (no context)
+!chat <message>                → Ask AI via AI (no context)
 /setcontext <text>             → Update AI response behavior (Admin)
 /getcontext                    → Get AI context (Admin)
 /summarize <amount>            → Summarize recent messages (Admin)
-/askquestion <question>          → Ask Gemini a question
+/askquestion <question>          → Ask AI a question
 
 Moderation (Admin Only):
 /kick <user> [reason]          → Kick a user
 /ban <user> [reason]           → Ban a user
 /timeout <user> <duration>     → Time out a user for a duration
 /untimeout <user>              → Remove a timeout
-/mute <user>                   → Mute a user
-/unmute <user>                 → Unmute a user
 /warn <user> <reason>          → Warn a user
 /nick <user> <nickname>        → Change a user's nickname
 /slowmode <duration>           → Set channel slowmode
@@ -933,7 +895,7 @@ Utility & Fun:
   }
 
   // Admin-only slash commands
-  const adminCommands = ["setcontext", "getcontext", "kick", "ban", "timeout", "untimeout", "mute", "unmute", "warn", "nick", "slowmode", "lock", "unlock", "delete", "deleteall", "addrole", "removerole", "createrole", "deleterole", "renamerole", "createchannel", "deletechannel", "createprivatechannel", "senddm", "verify", "summarize"];
+  const adminCommands = ["setcontext", "getcontext", "kick", "ban", "timeout", "untimeout", "warn", "nick", "slowmode", "lock", "unlock", "delete", "deleteall", "addrole", "removerole", "createrole", "deleterole", "renamerole", "createchannel", "deletechannel", "createprivatechannel", "senddm", "verify", "summarize"];
   if (adminCommands.includes(interaction.commandName) && !isUserAdmin) {
     return interaction.reply({ content: "❌ You don’t have permission to use this command.", ephemeral: true });
   }
@@ -1251,32 +1213,6 @@ Utility & Fun:
         return interaction.reply({ content: "❌ Failed to remove timeout.", ephemeral: true });
       }
     }
-    case "mute": {
-      const user = interaction.options.getMember("user");
-      if (!user) return interaction.reply({ content: "❌ User not found.", ephemeral: true });
-      try {
-        const role = await interaction.guild.roles.cache.find(r => r.name === "Muted");
-        if (!role) return interaction.reply({ content: "❌ 'Muted' role not found. Please create it first.", ephemeral: true });
-        await user.roles.add(role);
-        return interaction.reply({ content: `✅ Muted ${user.user.tag}.`, ephemeral: true });
-      } catch (err) {
-        console.error(err);
-        return interaction.reply({ content: "❌ Failed to mute user.", ephemeral: true });
-      }
-    }
-    case "unmute": {
-      const user = interaction.options.getMember("user");
-      if (!user) return interaction.reply({ content: "❌ User not found.", ephemeral: true });
-      try {
-        const role = await interaction.guild.roles.cache.find(r => r.name === "Muted");
-        if (!role) return interaction.reply({ content: "❌ 'Muted' role not found.", ephemeral: true });
-        await user.roles.remove(role);
-        return interaction.reply({ content: `✅ Unmuted ${user.user.tag}.`, ephemeral: true });
-      } catch (err) {
-        console.error(err);
-        return interaction.reply({ content: "❌ Failed to unmute user.", ephemeral: true });
-      }
-    }
     case "warn": {
       const user = interaction.options.getMember("user");
       const reason = interaction.options.getString("reason");
@@ -1371,8 +1307,8 @@ Utility & Fun:
         const response = await result.response.text();
         interaction.editReply(response);
       } catch (err) {
-        console.error("Error asking Gemini:", err);
-        interaction.editReply({ content: "❌ An error occurred while asking Gemini.", ephemeral: true });
+        console.error("Error asking AI:", err);
+        interaction.editReply({ content: "❌ An error occurred while asking AI.", ephemeral: true });
       }
       break;
     }
@@ -1527,19 +1463,17 @@ client.on("messageCreate", async (message) => {
 📘 Available Commands
 
 AI:
-!chat <message>                → Ask AI via Gemini (no context)
+!chat <message>                → Ask AI via AI (no context)
 /setcontext <text>             → Update AI response behavior (Admin)
 /getcontext                    → Get AI context (Admin)
 /summarize <amount>            → Summarize recent messages (Admin)
-/askquestion <question>          → Ask Gemini a question
+/askquestion <question>          → Ask AI a question
 
 Moderation (Admin Only):
 /kick <user> [reason]          → Kick a user
 /ban <user> [reason]           → Ban a user
 /timeout <user> <duration>     → Time out a user for a duration
 /untimeout <user>              → Remove a timeout
-/mute <user>                   → Mute a user
-/unmute <user>                 → Unmute a user
 /warn <user> <reason>          → Warn a user
 /nick <user> <nickname>        → Change a user's nickname
 /slowmode <duration>           → Set channel slowmode
