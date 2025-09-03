@@ -1448,9 +1448,10 @@ client.on("messageCreate", async (message) => {
   const command = args.shift()?.toLowerCase();
   const isCommandAllowed = isAdmin(message.member);
   
+  // Admin check for legacy '!' commands (excluding !chat and !help)
   if (command !== "!chat" && command !== "!help" && command?.startsWith("!")) {
     if (!isCommandAllowed) {
-      return;
+      return message.channel.send("❌ You don’t have permission to use this command.");
     }
     message.channel.send("❌ This `!` command has been moved to a slash command. Use `/` instead.");
     return;
